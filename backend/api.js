@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3000'; // Replace with your server's address if needed
+const API_BASE_URL = 'https://exchangenative.onrender.com'; // Replace with your server's address if needed
 
 // User registration
 export const registerUser = async (email, password) => {
