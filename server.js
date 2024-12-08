@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
-const db = process.env.DATABASE_URL || require('./database');
+const db = process.env.DATABASE_URL || require('./backend/database');
 require('dotenv').config();
 
 const app = express();
