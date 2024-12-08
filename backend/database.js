@@ -1,7 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const dbPath = process.env.DATABASE_URL || path.resolve(__dirname, './currency_exchange.db');
-const isRender = process.env.RENDER === 'true'; 
+const isRender = process.env.RENDER === 'true';
 const finalDbPath = isRender ? '/tmp/currency_exchange.db' : dbPath;
 
 const db = new sqlite3.Database(finalDbPath, (err) => {
