@@ -1,6 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./currency_exchange.db');
+const path = require('path');
 
+const dbPath = process.env.DATABASE_URL || path.resolve(__dirname, './currency_exchange.db');
+const db = new sqlite3.Database(dbPath);
 // Create tables
 db.serialize(() => {
     // Users table

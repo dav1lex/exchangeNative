@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
-const db = require('./database');
+const db = process.env.DATABASE_URL || require('./database');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -131,7 +132,7 @@ app.get('/archived/:userId', (req, res) => {
     );
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
