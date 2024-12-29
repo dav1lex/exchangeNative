@@ -2,6 +2,8 @@
 
 # dependencies
 node_modules/
+.env
+backend/currency_exchange.db
 
 # Expo
 .expo/
@@ -34,3 +36,4 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
