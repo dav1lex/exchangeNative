@@ -2,29 +2,30 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');  // Import PostgreSQL Pool
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Initialize Database
-const db = new sqlite3.Database(process.env.DATABASE_URL, (err) => {
-    if (err) {
-        console.error('Error connecting to SQLite database:', err.message);
-    } else {
-        console.log('Connected to the SQLite database.');
-    }
+// Initialize PostgreSQL Database
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+pool.on('connect', () => {
+    console.log('Connected to the PostgreSQL database.');
 });
 
 // Register
 app.post('/register', (req, res) => {
     const { email, password } = req.body;
-    db.run(
-        `INSERT INTO users (email, password) VALUES (?, ?)`,
+    pool.query(
+        `INSERT INTO users (email, password) VALUES ($1, $2)`,
         [email, password],
-        (err) => {
+        (err, result) => {
             if (err) return res.status(400).json({ error: 'User already exists.' });
             res.json({ message: 'Registration successful.' });
         }
@@ -36,26 +37,26 @@ app.post('/sell', (req, res) => {
     const { userId, currency, amount } = req.body;
     console.log('Request body:', req.body); // Log the request body
 
-    db.get(
-        `SELECT amount FROM holdings WHERE userId = ? AND currency = ?`,
+    pool.query(
+        `SELECT amount FROM holdings WHERE userId = $1 AND currency = $2`,
         [userId, currency],
-        (err, row) => {
-            if (err || !row || row.amount < amount) {
+        (err, result) => {
+            if (err || result.rows.length === 0 || result.rows[0].amount < amount) {
                 return res.status(400).json({ error: 'Not enough currency to sell.' });
             }
 
             const value = amount * getExchangeRate(currency); // Calculate based on rates
-            db.run(
-                `UPDATE holdings SET amount = amount - ? WHERE userId = ? AND currency = ?`,
+            pool.query(
+                `UPDATE holdings SET amount = amount - $1 WHERE userId = $2 AND currency = $3`,
                 [amount, userId, currency]
             );
-            db.run(
-                `UPDATE users SET balance = balance + ? WHERE id = ?`,
+            pool.query(
+                `UPDATE users SET balance = balance + $1 WHERE id = $2`,
                 [value, userId]
             );
-            db.run(
+            pool.query(
                 `INSERT INTO transactions (userId, currency, amount, type, timestamp) 
-                 VALUES (?, ?, ?, 'sell', ?)`,
+                 VALUES ($1, $2, $3, 'sell', $4)`,
                 [userId, currency, amount, new Date().toISOString()]
             );
             res.json({ message: 'Currency sold successfully.' });
@@ -67,12 +68,12 @@ app.post('/sell', (req, res) => {
 // Login
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    db.get(
-        `SELECT id, balance FROM users WHERE email = ? AND password = ?`,
+    pool.query(
+        `SELECT id, balance FROM users WHERE email = $1 AND password = $2`,
         [email, password],
-        (err, row) => {
-            if (err || !row) return res.status(401).json({ error: 'Invalid credentials.' });
-            res.json({ userId: row.id, balance: row.balance });
+        (err, result) => {
+            if (err || result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials.' });
+            res.json({ userId: result.rows[0].id, balance: result.rows[0].balance });
         }
     );
 });
@@ -80,8 +81,8 @@ app.post('/login', (req, res) => {
 // Fund account
 app.post('/fund', (req, res) => {
     const { userId, amount } = req.body;
-    db.run(
-        `UPDATE users SET balance = balance + ? WHERE id = ?`,
+    pool.query(
+        `UPDATE users SET balance = balance + $1 WHERE id = $2`,
         [amount, userId],
         (err) => {
             if (err) return res.status(400).json({ error: 'Error funding account.' });
@@ -94,22 +95,22 @@ app.post('/fund', (req, res) => {
 app.post('/buy', (req, res) => {
     const { userId, currency, amount, cost } = req.body;
 
-    db.get(`SELECT balance FROM users WHERE id = ?`, [userId], (err, row) => {
-        if (err || !row || row.balance < cost) {
+    pool.query(`SELECT balance FROM users WHERE id = $1`, [userId], (err, result) => {
+        if (err || result.rows.length === 0 || result.rows[0].balance < cost) {
             return res.status(400).json({ error: 'Insufficient balance.' });
         }
 
-        db.run(`UPDATE users SET balance = balance - ? WHERE id = ?`, [cost, userId]);
-        db.run(
+        pool.query(`UPDATE users SET balance = balance - $1 WHERE id = $2`, [cost, userId]);
+        pool.query(
             `INSERT INTO holdings (userId, currency, amount) 
-             VALUES (?, ?, ?) 
+             VALUES ($1, $2, $3) 
              ON CONFLICT(userId, currency) 
              DO UPDATE SET amount = amount + excluded.amount`,
             [userId, currency, amount]
         );
-        db.run(
+        pool.query(
             `INSERT INTO transactions (userId, currency, amount, type, timestamp) 
-             VALUES (?, ?, ?, 'buy', ?)`,
+            VALUES ($1, $2, $3, 'buy', $4)`,
             [userId, currency, amount, new Date().toISOString()]
         );
         res.json({ message: 'Currency purchased successfully.' });
@@ -130,12 +131,12 @@ app.get('/rates', async (req, res) => {
 app.get('/archived/:userId', (req, res) => {
     const { userId } = req.params;
 
-    db.all(
-        `SELECT * FROM transactions WHERE userId = ? ORDER BY timestamp DESC`,
+    pool.query(
+        `SELECT * FROM transactions WHERE userId = $1 ORDER BY timestamp DESC`,
         [userId],
-        (err, rows) => {
+        (err, result) => {
             if (err) return res.status(400).json({ error: 'Failed to fetch transactions.' });
-            res.json(rows);
+            res.json(result.rows);
         }
     );
 });
