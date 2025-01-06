@@ -15,8 +15,9 @@ export default function FundAccountScreen() {
         }
 
         try {
-            await fundAccount(userId, numericAmount);
-            setBalance((prev) => prev + numericAmount);
+            const response = await fundAccount(userId, numericAmount);
+            const updatedBalance = parseFloat(response.data.balance);
+            setBalance(updatedBalance);
             Alert.alert('Success', `Your account has been funded with €${numericAmount}.`);
             setAmount('');
         } catch (error) {

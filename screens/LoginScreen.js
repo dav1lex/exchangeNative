@@ -1,17 +1,17 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import { loginUser } from '../backend/api';
-import { BalanceContext } from './BalanceContext';
+import React, {useState, useContext} from 'react';
+import {View, Text, TextInput, TouchableOpacity, Alert, StyleSheet} from 'react-native';
+import {loginUser} from '../backend/api';
+import {BalanceContext} from './BalanceContext';
 
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen({navigation}) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { setBalance, setUserId } = useContext(BalanceContext);
+    const {setBalance, setUserId} = useContext(BalanceContext);
 
     const handleLogin = async () => {
         try {
             const response = await loginUser(email, password);
-            const { userId, balance } = response.data;
+            const {userId, balance} = response.data;
 
             setUserId(userId); // Set user ID in context
             setBalance(balance); // Set balance in context

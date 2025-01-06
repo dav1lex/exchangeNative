@@ -4,7 +4,7 @@ import { BalanceContext } from './BalanceContext';
 import { getExchangeRates, buyCurrency } from '../backend/api';
 
 export default function HomeScreen({ navigation }) {
-    const { balance, setBalance } = useContext(BalanceContext);
+    const { balance, userId, setBalance } = useContext(BalanceContext); // Get userId from context
     const [rates, setRates] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState(null);
@@ -30,8 +30,13 @@ export default function HomeScreen({ navigation }) {
             return;
         }
 
-        const rate = rates.find(rate => rate.currency === selectedCurrency);
-        const cost = amount * rate.mid;
+        const rate = rates.find(rate => rate.code === selectedCurrency);
+        if (!rate) {
+            alert('Currency not supported.');
+            return;
+        }
+
+        const cost = amount * rate.ask; // Assuming ask is the rate at which the bank sells the currency to the user
 
         if (balance < cost) {
             alert('Insufficient balance!');
@@ -39,18 +44,18 @@ export default function HomeScreen({ navigation }) {
         }
 
         try {
-            await buyCurrency(1, selectedCurrency, amount, cost); // Assuming userId = 1 for now
-            setBalance(balance - cost); // Update balance
+            const response = await buyCurrency(userId, selectedCurrency, amount, cost); // Use dynamic userId
+            setBalance(response.data.balance); // Update balance from server response
             setShowModal(false);
         } catch (error) {
-            console.error("Error buying currency", error);
+            console.error("Error buying currency:", error);
             alert('Error purchasing currency.');
         }
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.balance}>Balance: €{balance.toFixed(2)}</Text>
+            <Text style={styles.balance}>Balance: {parseFloat(balance || 0).toFixed(2)} PLN</Text>
 
             <View style={styles.buttonContainer}>
                 <TouchableOpacity
@@ -81,11 +86,11 @@ export default function HomeScreen({ navigation }) {
                     <TouchableOpacity
                         style={styles.rateItem}
                         onPress={() => {
-                            setSelectedCurrency(item.currency);
+                            setSelectedCurrency(item.code);
                             setShowModal(true);
                         }}
                     >
-                        <Text style={styles.currencyText}>{item.currency}</Text>
+                        <Text style={styles.currencyText}>{item.currency} {item.code}</Text>
                         <Text style={styles.rateText}>{item.mid} PLN</Text>
                     </TouchableOpacity>
                 )}

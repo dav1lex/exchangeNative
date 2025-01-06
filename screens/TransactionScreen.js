@@ -1,25 +1,28 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TextInput, Button, FlatList, StyleSheet } from 'react-native';
 import { BalanceContext } from './BalanceContext';
-import { sellCurrency, getArchivedRates } from '../backend/api';
+import { sellCurrency, getHoldings } from '../backend/api';
 import Toast from "react-native-toast-message";
 
-export default function TransactionScreen({ navigation }) {
+export default function TransactionScreen() {
     const { balance, userId, setBalance } = useContext(BalanceContext);
     const [holdings, setHoldings] = useState([]);
     const [selectedCurrency, setSelectedCurrency] = useState('');
     const [amount, setAmount] = useState('');
 
-    // Fetch user holdings
+    const fetchHoldings = async () => {
+        try {
+            const response = await getHoldings(userId);
+            const holdingsData = response.data;
+            // Filter out currencies with a zero balance
+            const filteredHoldings = holdingsData.filter(item => parseFloat(item.amount) > 0);
+            setHoldings(filteredHoldings);
+        } catch (error) {
+            console.error("Error fetching holdings", error);
+        }
+    };
+
     useEffect(() => {
-        const fetchHoldings = async () => {
-            try {
-                const response = await getArchivedRates(userId); // Assuming it includes holdings
-                setHoldings(response.data.filter((item) => item.type === 'buy')); // Filter 'buy' transactions
-            } catch (error) {
-                console.error("Error fetching holdings", error);
-            }
-        };
         fetchHoldings();
     }, [userId]);
 
@@ -45,18 +48,18 @@ export default function TransactionScreen({ navigation }) {
         }
 
         try {
-            await sellCurrency(userId, selectedCurrency, numericAmount);
-            setBalance((prev) => prev + numericAmount); // Assuming 1:1 conversion to EUR for simplicity
+            const response = await sellCurrency(userId, selectedCurrency, numericAmount);
+            setBalance(parseFloat(response.data.newBalance)); // update balance
             Toast.show({
                 type: 'success',
                 text1: 'Transaction Successful',
                 text2: `Sold ${numericAmount} ${selectedCurrency}.`,
             });
             setAmount('');
-
+            await fetchHoldings(); // Refresh after sale
         } catch (error) {
             console.error('Sell Currency Error:', error.response?.data || error.message);
-            
+
             Toast.show({
                 type: 'error',
                 text1: 'Transaction Failed',
@@ -67,7 +70,7 @@ export default function TransactionScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.balance}>Balance: €{balance.toFixed(2)}</Text>
+            <Text style={styles.balance}>Balance: {parseFloat(balance || 0).toFixed(2)} PLN</Text>
 
             <Text style={styles.title}>Your Holdings:</Text>
             <FlatList
@@ -75,7 +78,7 @@ export default function TransactionScreen({ navigation }) {
                 keyExtractor={(item) => item.currency}
                 renderItem={({ item }) => (
                     <Text style={styles.holding}>
-                        {item.currency}: {item.amount}
+                        {item.currency}: {parseFloat(item.amount).toFixed(2)}
                     </Text>
                 )}
             />
