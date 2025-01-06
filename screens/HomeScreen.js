@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, TextInput, Button } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, TextInput, Button, ScrollView } from 'react-native';
 import { BalanceContext } from './BalanceContext';
 import { getExchangeRates, buyCurrency } from '../backend/api';
 
@@ -54,7 +54,7 @@ export default function HomeScreen({ navigation }) {
     };
 
     return (
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.balance}>Balance: {parseFloat(balance || 0).toFixed(2)} PLN</Text>
 
             <View style={styles.buttonContainer}>
@@ -94,6 +94,7 @@ export default function HomeScreen({ navigation }) {
                         <Text style={styles.rateText}>{item.mid} PLN</Text>
                     </TouchableOpacity>
                 )}
+                style={styles.flatList}
             />
 
             {/* Modal for buying currency */}
@@ -113,17 +114,19 @@ export default function HomeScreen({ navigation }) {
                             value={amountToBuy}
                             onChangeText={setAmountToBuy}
                         />
-                        <Button title="Buy" onPress={handleBuyCurrency} />
-                        <Button title="Cancel" onPress={() => setShowModal(false)} />
+                        <View style={styles.modalButtonContainer}>
+                            <Button title="Buy" onPress={handleBuyCurrency} />
+                            <Button title="Cancel" onPress={() => setShowModal(false)} />
+                        </View>
                     </View>
                 </View>
             </Modal>
-        </View>
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+    container: { flexGrow: 1, padding: 20, backgroundColor: '#f5f5f5' },
     balance: {
         fontSize: 26,
         fontWeight: 'bold',
@@ -153,6 +156,10 @@ const styles = StyleSheet.create({
     transactionButton: { backgroundColor: '#2196F3' },
     archivedButton: { backgroundColor: '#FF9800' },
     buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+    flatList: {
+        flexGrow: 0,
+        marginBottom: 20,
+    },
     rateItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -192,6 +199,11 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         marginBottom: 10,
         paddingLeft: 10,
+        width: '100%'
+    },
+    modalButtonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         width: '100%'
     }
 });
