@@ -40,12 +40,24 @@ app.post('/login', (req, res) => {
 // Register
 app.post('/register', (req, res) => {
     const { email, password } = req.body;
+
+    // Check if email already exists
     pool.query(
-        `INSERT INTO users (email, password) VALUES ($1, $2)`,
-        [email, password],
+        `SELECT * FROM users WHERE email = $1`,
+        [email],
         (err, result) => {
-            if (err) return res.status(400).json({ error: 'User already exists.' });
-            res.json({ message: 'Registration successful.' });
+            if (err) return res.status(500).json({ error: 'Database error.' });
+            if (result.rows.length > 0) return res.status(400).json({ error: 'User already exists.' });
+
+            // If email does not exist, insert new user
+            pool.query(
+                `INSERT INTO users (email, password) VALUES ($1, $2)`,
+                [email, password],
+                (err, result) => {
+                    if (err) return res.status(500).json({ error: 'Database error.' });
+                    res.json({ message: 'Registration successful.' });
+                }
+            );
         }
     );
 });
