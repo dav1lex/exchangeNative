@@ -18,27 +18,22 @@ const pool = new Pool({
 pool.on('connect', () => {
     console.log('Connected to the PostgreSQL database.');
 });
-
-// Root Route
-
-// Login
-app.post('/', (req, res) => {
-    const { email, password } = req.body;
+// login
+app.post('/login', (req, res) => {
+    const {email, password} = req.body;
     pool.query(
         `SELECT id, balance FROM users WHERE email = $1 AND password = $2`,
         [email, password],
         (err, result) => {
-            if (err || result.rows.length === 0) return res.status(401).json({ error: 'Invalid credentials.' });
-            res.json({ userId: result.rows[0].id, balance: parseFloat(result.rows[0].balance) });
+            if (err || result.rows.length === 0) return res.status(401).json({error: 'Invalid credentials.'});
+            res.json({userId: result.rows[0].id, balance: parseFloat(result.rows[0].balance)});
         }
     );
 });
 
 // Register
 app.post('/register', (req, res) => {
-    const { email, password } = req.body;
-
-    // Check if email already exists
+    const {email, password} = req.body;
     pool.query(
         `SELECT * FROM users WHERE email = $1`,
         [email],
@@ -61,13 +56,13 @@ app.post('/register', (req, res) => {
 
 // Sell
 app.post('/sell', async (req, res) => {
-    const { userId, currency, amount } = req.body;
+    const {userId, currency, amount} = req.body;
     const numericAmount = parseFloat(amount); // Ensure 'amount' is a number
 
     console.log(`Received sell request: userId=${userId}, currency=${currency}, amount=${numericAmount}`);
 
     if (isNaN(numericAmount) || numericAmount <= 0) {
-        return res.status(400).json({ error: 'Invalid amount.' });
+        return res.status(400).json({error: 'Invalid amount.'});
     }
 
     try {
@@ -77,7 +72,7 @@ app.post('/sell', async (req, res) => {
         const rate = rates.find(rate => rate.code === currency);
 
         if (!rate) {
-            return res.status(400).json({ error: 'Currency not supported.' });
+            return res.status(400).json({error: 'Currency not supported.'});
         }
 
         console.log(`Fetched rate for ${currency}: mid=${rate.mid}`);
@@ -88,14 +83,14 @@ app.post('/sell', async (req, res) => {
         // Check if user has enough currency to sell
         const holdingResult = await pool.query(`SELECT amount FROM holdings WHERE userId = $1 AND currency = $2`, [userId, currency]);
         if (holdingResult.rows.length === 0) {
-            return res.status(400).json({ error: 'Not enough currency to sell.' });
+            return res.status(400).json({error: 'Not enough currency to sell.'});
         }
 
         const holdingAmount = parseFloat(holdingResult.rows[0].amount);
         console.log(`Holding amount: holdingAmount=${holdingAmount}`);
 
         if (isNaN(holdingAmount) || holdingAmount < numericAmount) {
-            return res.status(400).json({ error: 'Not enough currency to sell.' });
+            return res.status(400).json({error: 'Not enough currency to sell.'});
         }
 
         // Update holdings

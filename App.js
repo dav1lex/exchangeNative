@@ -16,7 +16,7 @@ export default function App() {
         <BalanceProvider>
             <NavigationContainer>
                 <Stack.Navigator initialRouteName="Login">
-                    <Stack.Screen name="/" component={LoginScreen}/>
+                    <Stack.Screen name="Login" component={LoginScreen}/>
                     <Stack.Screen name="Register" component={RegisterScreen}/>
                     <Stack.Screen name="Home" component={HomeScreen}/>
                     <Stack.Screen name="Fund Account" component={FundAccountScreen}/>
