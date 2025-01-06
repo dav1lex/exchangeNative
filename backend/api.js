@@ -9,7 +9,7 @@ export const registerUser = async (email, password) => {
 
 // User login
 export const loginUser = async (email, password) => {
-    return axios.post(`${API_BASE_URL}/login`, { email, password });
+    return axios.post(`${API_BASE_URL}/`, { email, password });
 };
 
 // Fund account

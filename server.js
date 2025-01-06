@@ -20,12 +20,9 @@ pool.on('connect', () => {
 });
 
 // Root Route
-app.get('/', (req, res) => {
-    res.send('Welcome to the Currency Exchange API');
-});
 
 // Login
-app.post('/login', (req, res) => {
+app.post('/', (req, res) => {
     const { email, password } = req.body;
     pool.query(
         `SELECT id, balance FROM users WHERE email = $1 AND password = $2`,
