@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet } from 'react-native';
-import { BalanceContext } from './BalanceContext';
-import { sellCurrency, getHoldings } from '../backend/api';
+import React, {useState, useEffect, useContext} from 'react';
+import {View, Text, TextInput, FlatList, StyleSheet} from 'react-native';
+import {BalanceContext} from './BalanceContext';
+import {sellCurrency, getHoldings} from '../backend/api';
 import Toast from "react-native-toast-message";
 
 export default function TransactionScreen() {
-    const { balance, userId, setBalance } = useContext(BalanceContext);
+    const {balance, userId, setBalance} = useContext(BalanceContext);
     const [holdings, setHoldings] = useState([]);
     const [selectedCurrency, setSelectedCurrency] = useState('');
     const [amount, setAmount] = useState('');
@@ -72,15 +72,19 @@ export default function TransactionScreen() {
         <View style={styles.container}>
             <Text style={styles.balance}>Balance: {parseFloat(balance || 0).toFixed(2)} PLN</Text>
 
-            <Text style={styles.title}>Your Holdings:</Text>
+            <Text style={styles.title}>Your Holdings</Text>
             <FlatList
                 data={holdings}
                 keyExtractor={(item) => item.currency}
-                renderItem={({ item }) => (
-                    <Text style={styles.holding}>
-                        {item.currency}: {parseFloat(item.amount).toFixed(2)}
-                    </Text>
+                renderItem={({item}) => (
+                    <View style={styles.holdingItem}>
+                        <Text style={styles.holdingText}>
+                            {item.currency}: {parseFloat(item.amount).toFixed(2)}
+                        </Text>
+                    </View>
                 )}
+                style={{maxHeight: '40%'}}
+                contentContainerStyle={{paddingBottom: 10}}
             />
 
             <TextInput
@@ -88,6 +92,7 @@ export default function TransactionScreen() {
                 placeholder="Currency (e.g., EUR)"
                 value={selectedCurrency}
                 onChangeText={setSelectedCurrency}
+                placeholderTextColor="#A0AEC0"
             />
             <TextInput
                 style={styles.input}
@@ -95,16 +100,68 @@ export default function TransactionScreen() {
                 value={amount}
                 onChangeText={setAmount}
                 keyboardType="numeric"
+                placeholderTextColor="#A0AEC0"
             />
-            <Button title="Sell" onPress={handleSellCurrency} />
+            <TouchableOpacity
+                style={styles.sellButton}
+                onPress={handleSellCurrency}
+            >
+                <Text style={styles.buttonText}>Sell Currency</Text>
+            </TouchableOpacity>
         </View>
     );
 }
-
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20 },
-    balance: { fontSize: 24, marginBottom: 20 },
-    title: { fontSize: 18, marginBottom: 10 },
-    holding: { fontSize: 16, marginVertical: 5 },
-    input: { borderWidth: 1, padding: 10, marginVertical: 10, borderRadius: 5 },
+    container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: '#F7F9FC',
+    },
+    balance: {
+        fontSize: 28,
+        fontWeight: '600',
+        marginBottom: 24,
+        color: '#1A1F36',
+        textAlign: 'center',
+    },
+    title: {
+        fontSize: 20,
+        fontWeight: '600',
+        marginBottom: 16,
+        color: '#1A1F36',
+    },
+    holdingItem: {
+        backgroundColor: '#FFFFFF',
+        padding: 16,
+        marginVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    holdingText: {
+        fontSize: 16,
+        color: '#1A1F36',
+    },
+    input: {
+        height: 50,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        padding: 15,
+        marginVertical: 8,
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+        fontSize: 16,
+    },
+    sellButton: {
+        backgroundColor: '#4F46E5',
+        padding: 15,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    buttonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
 });

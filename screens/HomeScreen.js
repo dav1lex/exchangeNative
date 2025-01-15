@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, TextInput, Button, ScrollView } from 'react-native';
-import { BalanceContext } from './BalanceContext';
-import { getExchangeRates, buyCurrency } from '../backend/api';
+import React, {useState, useEffect, useContext} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, TextInput, Button, ScrollView} from 'react-native';
+import {BalanceContext} from './BalanceContext';
+import {getExchangeRates, buyCurrency} from '../backend/api';
 
-export default function HomeScreen({ navigation }) {
-    const { balance, userId, setBalance } = useContext(BalanceContext); // Get userId from context
+export default function HomeScreen({navigation}) {
+    const {balance, userId, setBalance} = useContext(BalanceContext); // Get userId from context
     const [rates, setRates] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState(null);
@@ -79,10 +79,11 @@ export default function HomeScreen({ navigation }) {
             </View>
 
             <Text style={styles.title}>Exchange Rates</Text>
+            {/*currencies show under here*/}
             <FlatList
                 data={rates}
                 keyExtractor={(item) => item.code}
-                renderItem={({ item }) => (
+                renderItem={({item}) => (
                     <TouchableOpacity
                         style={styles.rateItem}
                         onPress={() => {
@@ -94,7 +95,10 @@ export default function HomeScreen({ navigation }) {
                         <Text style={styles.rateText}>{item.mid} PLN</Text>
                     </TouchableOpacity>
                 )}
-                style={styles.flatList}
+                style={[styles.flatList, { flex: 1 }]}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                showsVerticalScrollIndicator={true}
+                scrollEnabled={true}
             />
 
             {/* Modal for buying currency */}
@@ -115,8 +119,8 @@ export default function HomeScreen({ navigation }) {
                             onChangeText={setAmountToBuy}
                         />
                         <View style={styles.modalButtonContainer}>
-                            <Button title="Buy" onPress={handleBuyCurrency} />
-                            <Button title="Cancel" onPress={() => setShowModal(false)} />
+                            <Button title="Buy" onPress={handleBuyCurrency}/>
+                            <Button title="Cancel" onPress={() => setShowModal(false)}/>
                         </View>
                     </View>
                 </View>
@@ -152,14 +156,14 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderRadius: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 2,
     },
-    fundButton: { backgroundColor: '#4F46E5' }, // Modern indigo
-    transactionButton: { backgroundColor: '#3B82F6' }, // Modern blue
-    archivedButton: { backgroundColor: '#6366F1' }, // Modern purple
+    fundButton: {backgroundColor: '#4F46E5'}, // Modern indigo
+    transactionButton: {backgroundColor: '#3B82F6'}, // Modern blue
+    archivedButton: {backgroundColor: '#6366F1'}, // Modern purple
     buttonText: {
         color: '#fff',
         fontSize: 15,
@@ -181,7 +185,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.05,
         shadowRadius: 2,
         elevation: 1,
