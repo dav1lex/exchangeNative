@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useContext} from 'react';
-import {View, Text, TextInput, FlatList, StyleSheet} from 'react-native';
+import {View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity} from 'react-native';
 import {BalanceContext} from './BalanceContext';
 import {sellCurrency, getHoldings} from '../backend/api';
 import Toast from "react-native-toast-message";
