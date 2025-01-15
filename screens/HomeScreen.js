@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useContext} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, TextInput, Button, ScrollView} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, TextInput, Button} from 'react-native';
 import {BalanceContext} from './BalanceContext';
 import {getExchangeRates, buyCurrency} from '../backend/api';
 
@@ -54,7 +54,7 @@ export default function HomeScreen({navigation}) {
     };
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.container}>
             <Text style={styles.balance}>Balance: {parseFloat(balance || 0).toFixed(2)} PLN</Text>
 
             <View style={styles.buttonContainer}>
@@ -79,27 +79,25 @@ export default function HomeScreen({navigation}) {
             </View>
 
             <Text style={styles.title}>Exchange Rates</Text>
-            {/*currencies show under here*/}
-            <FlatList
-                data={rates}
-                keyExtractor={(item) => item.code}
-                renderItem={({item}) => (
-                    <TouchableOpacity
-                        style={styles.rateItem}
-                        onPress={() => {
-                            setSelectedCurrency(item.code);
-                            setShowModal(true);
-                        }}
-                    >
-                        <Text style={styles.currencyText}>{item.currency} {item.code}</Text>
-                        <Text style={styles.rateText}>{item.mid} PLN</Text>
-                    </TouchableOpacity>
-                )}
-                style={[styles.flatList, { flex: 1 }]}
-                contentContainerStyle={{ paddingBottom: 20 }}
-                showsVerticalScrollIndicator={true}
-                scrollEnabled={true}
-            />
+            <View style={styles.ratesContainer}>
+                <FlatList
+                    data={rates}
+                    keyExtractor={(item) => item.code}
+                    renderItem={({item}) => (
+                        <TouchableOpacity
+                            style={styles.rateItem}
+                            onPress={() => {
+                                setSelectedCurrency(item.code);
+                                setShowModal(true);
+                            }}
+                        >
+                            <Text style={styles.currencyText}>{item.currency} {item.code}</Text>
+                            <Text style={styles.rateText}>{item.mid} PLN</Text>
+                        </TouchableOpacity>
+                    )}
+                    showsVerticalScrollIndicator={true}
+                />
+            </View>
 
             {/* Modal for buying currency */}
             <Modal
@@ -125,7 +123,7 @@ export default function HomeScreen({navigation}) {
                     </View>
                 </View>
             </Modal>
-        </ScrollView>
+        </View>
     );
 }
 
@@ -133,7 +131,7 @@ const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
         padding: 16,
-        backgroundColor: '#F7F9FC', // Modern light background
+        backgroundColor: '#F7F9FC'
     },
     balance: {
         fontSize: 32,
@@ -161,9 +159,9 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
         elevation: 2,
     },
-    fundButton: {backgroundColor: '#4F46E5'}, // Modern indigo
-    transactionButton: {backgroundColor: '#3B82F6'}, // Modern blue
-    archivedButton: {backgroundColor: '#6366F1'}, // Modern purple
+    fundButton: {backgroundColor: '#4F46E5'},
+    transactionButton: {backgroundColor: '#3B82F6'},
+    archivedButton: {backgroundColor: '#6366F1'},
     buttonText: {
         color: '#fff',
         fontSize: 15,
@@ -232,5 +230,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         gap: 12,
-    },
+    }, ratesContainer: {
+        flex: 1,
+        marginBottom: 10
+    }
+
 });
