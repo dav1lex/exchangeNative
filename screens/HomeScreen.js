@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useContext} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, TextInput, Button} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, TextInput, Button, SafeAreaView} from 'react-native';
 import {BalanceContext} from './BalanceContext';
 import {getExchangeRates, buyCurrency} from '../backend/api';
 
@@ -54,32 +54,34 @@ export default function HomeScreen({navigation}) {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.balance}>Balance: {parseFloat(balance || 0).toFixed(2)} PLN</Text>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.headerSection}>
+                <Text style={styles.balance}>Balance: {parseFloat(balance || 0).toFixed(2)} PLN</Text>
 
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    style={[styles.button, styles.fundButton]}
-                    onPress={() => navigation.navigate('Fund Account')}
-                >
-                    <Text style={styles.buttonText}>Fund Account</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.button, styles.transactionButton]}
-                    onPress={() => navigation.navigate('Transaction')}
-                >
-                    <Text style={styles.buttonText}>Transaction</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.button, styles.archivedButton]}
-                    onPress={() => navigation.navigate('Archived Rates')}
-                >
-                    <Text style={styles.buttonText}>Archived Rates</Text>
-                </TouchableOpacity>
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                        style={[styles.button, styles.fundButton]}
+                        onPress={() => navigation.navigate('Fund Account')}
+                    >
+                        <Text style={styles.buttonText}>Fund Account</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.button, styles.transactionButton]}
+                        onPress={() => navigation.navigate('Transaction')}
+                    >
+                        <Text style={styles.buttonText}>Transaction</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.button, styles.archivedButton]}
+                        onPress={() => navigation.navigate('Archived Rates')}
+                    >
+                        <Text style={styles.buttonText}>Archived Rates</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
 
-            <Text style={styles.title}>Exchange Rates</Text>
-            <View style={styles.ratesContainer}>
+            <View style={styles.ratesSection}>
+                <Text style={styles.title}>Exchange Rates</Text>
                 <FlatList
                     data={rates}
                     keyExtractor={(item) => item.code}
@@ -123,13 +125,13 @@ export default function HomeScreen({navigation}) {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flexGrow: 1,
+        flex: 1,
         padding: 16,
         backgroundColor: '#F7F9FC'
     },
@@ -233,6 +235,12 @@ const styles = StyleSheet.create({
     }, ratesContainer: {
         flex: 1,
         marginBottom: 10
-    }
+    },
+    headerSection: {padding: 16},
+    ratesSection: {
+        flex: 1,
+        padding: 16,
+        paddingTop: 0,
+    },
 
 });
