@@ -126,84 +126,107 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flexGrow: 1, padding: 20, backgroundColor: '#f5f5f5' },
+    container: {
+        flexGrow: 1,
+        padding: 16,
+        backgroundColor: '#F7F9FC', // Modern light background
+    },
     balance: {
-        fontSize: 26,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        color: '#333',
-        textAlign: 'center'
-    },
-    title: {
-        fontSize: 22,
-        marginVertical: 10,
-        fontWeight: 'bold',
+        fontSize: 32,
+        fontWeight: '600',
+        marginBottom: 24,
+        color: '#1A1F36',
         textAlign: 'center',
-        color: '#555'
     },
-    buttonContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 20 },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 24,
+        flexWrap: 'wrap',
+        gap: 10,
+    },
     button: {
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 10,
+        flex: 1,
+        minWidth: '30%',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 3
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 2,
     },
-    fundButton: { backgroundColor: '#4CAF50' },
-    transactionButton: { backgroundColor: '#2196F3' },
-    archivedButton: { backgroundColor: '#FF9800' },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    flatList: {
-        flexGrow: 0,
-        marginBottom: 20,
+    fundButton: { backgroundColor: '#4F46E5' }, // Modern indigo
+    transactionButton: { backgroundColor: '#3B82F6' }, // Modern blue
+    archivedButton: { backgroundColor: '#6366F1' }, // Modern purple
+    buttonText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    title: {
+        fontSize: 24,
+        marginVertical: 16,
+        fontWeight: '600',
+        color: '#1A1F36',
+        textAlign: 'left',
     },
     rateItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        padding: 15,
-        marginVertical: 5,
+        padding: 16,
+        marginVertical: 6,
         backgroundColor: '#fff',
-        borderRadius: 8,
+        borderRadius: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.05,
         shadowRadius: 2,
-        elevation: 2
+        elevation: 1,
     },
-    currencyText: { fontSize: 18, fontWeight: '500', color: '#333' },
-    rateText: { fontSize: 18, fontWeight: '400', color: '#666' },
+    currencyText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#1A1F36',
+    },
+    rateText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#4F46E5',
+    },
     modalOverlay: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: 'flex-end', // Bottom sheet style
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modalContainer: {
         backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
-        width: 300,
-        alignItems: 'center'
+        padding: 24,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        width: '100%',
     },
     modalTitle: {
         fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 10
+        fontWeight: '600',
+        marginBottom: 16,
+        color: '#1A1F36',
     },
     input: {
-        height: 40,
-        borderColor: '#ccc',
+        height: 48,
+        borderColor: '#E5E7EB',
         borderWidth: 1,
-        marginBottom: 10,
-        paddingLeft: 10,
-        width: '100%'
+        borderRadius: 12,
+        marginBottom: 16,
+        paddingHorizontal: 16,
+        width: '100%',
+        backgroundColor: '#F9FAFB',
     },
     modalButtonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        width: '100%'
-    }
+        gap: 12,
+    },
 });
