@@ -9,11 +9,19 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 pool.on('connect', () => {
-    console.log('Connected to the PostgreSQL database.');
+    console.log('Connected to the database.');
 });
+
 app.post('/login', (req, res) => {
     const {email, password} = req.body;
+
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({error: 'Invalid email format.'});
+    }
+
     pool.query(
         `SELECT id, balance FROM users WHERE email = $1 AND password = $2`,
         [email, password],
@@ -26,6 +34,11 @@ app.post('/login', (req, res) => {
 
 app.post('/register', (req, res) => {
     const {email, password} = req.body;
+
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({error: 'Invalid email format.'});
+    }
+
     pool.query(
         `SELECT * FROM users WHERE email = $1`,
         [email],
@@ -33,13 +46,12 @@ app.post('/register', (req, res) => {
             if (err) return res.status(500).json({error: 'Database error.'});
             if (result.rows.length > 0) return res.status(400).json({error: 'User already exists.'});
 
-            // If email does not exist, insert new user
             pool.query(
                 `INSERT INTO users (email, password) VALUES ($1, $2)`,
                 [email, password],
                 (err, result) => {
-                    if (err) return res.status(500).json({error: 'Database error.'});
-                    res.json({message: 'Registration successful.'});
+                    if (err) return res.status(500).json({error: 'Database error.'})
+                    res.json({message: 'Registration successful.'})
                 }
             );
         }
@@ -48,16 +60,13 @@ app.post('/register', (req, res) => {
 
 app.post('/sell', async (req, res) => {
     const {userId, currency, amount} = req.body;
-    const numericAmount = parseFloat(amount); // Ensure 'amount' is a number
-
-    console.log(`Received sell request: userId=${userId}, currency=${currency}, amount=${numericAmount}`);
+    const numericAmount = parseFloat(amount);
 
     if (isNaN(numericAmount) || numericAmount <= 0) {
         return res.status(400).json({error: 'Invalid amount.'});
     }
 
     try {
-        // Fetch exchange rates from NBP API
         const response = await axios.get('https://api.nbp.pl/api/exchangerates/tables/A?format=json');
         const rates = response.data[0].rates;
         const rate = rates.find(rate => rate.code === currency);
@@ -66,57 +75,64 @@ app.post('/sell', async (req, res) => {
             return res.status(400).json({error: 'Currency not supported.'});
         }
 
-        console.log(`Fetched rate for ${currency}: mid=${rate.mid}`);
-
-        const sellRate = rate.mid; // Using mid as the rate for selling as well
+        const sellRate = rate.mid;
         const value = numericAmount * sellRate;
 
-        // Check if user has enough currency to sell
-        const holdingResult = await pool.query(`SELECT amount FROM holdings WHERE userId = $1 AND currency = $2`, [userId, currency]);
+        const holdingResult = await pool.query(
+            `SELECT amount FROM holdings WHERE userId = $1 AND currency = $2`,
+            [userId, currency]
+        );
+
         if (holdingResult.rows.length === 0) {
             return res.status(400).json({error: 'Not enough currency to sell.'});
         }
 
         const holdingAmount = parseFloat(holdingResult.rows[0].amount);
-        console.log(`Holding amount: holdingAmount=${holdingAmount}`);
-
         if (isNaN(holdingAmount) || holdingAmount < numericAmount) {
             return res.status(400).json({error: 'Not enough currency to sell.'});
         }
 
-        // Update holdings
-        if (holdingAmount === numericAmount) {
-            // If all currency is sold, remove the entry
-            await pool.query(`DELETE FROM holdings WHERE userId = $1 AND currency = $2`, [userId, currency]);
-        } else {
-            await pool.query(`UPDATE holdings SET amount = amount - $1 WHERE userId = $2 AND currency = $3`, [numericAmount, userId, currency]);
+        // Begin transaction
+        await pool.query('BEGIN');
+
+        try {
+            if (holdingAmount === numericAmount) {
+                await pool.query(
+                    `DELETE FROM holdings WHERE userId = $1 AND currency = $2`,
+                    [userId, currency]
+                );
+            } else {
+                await pool.query(
+                    `UPDATE holdings SET amount = amount - $1 WHERE userId = $2 AND currency = $3`,
+                    [numericAmount, userId, currency]
+                );
+            }
+
+            const userResult = await pool.query(
+                `UPDATE users SET balance = balance + $1 WHERE id = $2 RETURNING balance`,
+                [value, userId]
+            );
+
+            if (userResult.rows.length === 0) {
+                throw new Error('User not found.');
+            }
+
+            await pool.query(
+                `INSERT INTO transactions (userId, currency, amount, type, timestamp, rate) 
+                 VALUES ($1, $2, $3, 'sell', $4, $5)`,
+                [userId, currency, numericAmount, new Date().toISOString(), sellRate]
+            );
+
+            await pool.query('COMMIT');
+
+            res.json({
+                message: 'Currency sold successfully.',
+                newBalance: parseFloat(userResult.rows[0].balance)
+            });
+        } catch (err) {
+            await pool.query('ROLLBACK');
+            throw err;
         }
-
-        // Update user balance
-        const userResult = await pool.query(`SELECT balance FROM users WHERE id = $1`, [userId]);
-        if (userResult.rows.length === 0) {
-            return res.status(400).json({error: 'User not found.'});
-        }
-
-        const userBalance = parseFloat(userResult.rows[0].balance);
-        console.log(`User balance before sale: balance=${userBalance}`);
-
-        if (isNaN(userBalance)) {
-            return res.status(400).json({error: 'Invalid user balance.'});
-        }
-
-        const newBalance = userBalance + value;
-        console.log(`New balance after sale: newBalance=${newBalance}`);
-        await pool.query(`UPDATE users SET balance = $1 WHERE id = $2`, [newBalance, userId]);
-
-        // Record transaction
-        await pool.query(
-            `INSERT INTO transactions (userId, currency, amount, type, timestamp) 
-             VALUES ($1, $2, $3, 'sell', $4)`,
-            [userId, currency, numericAmount, new Date().toISOString()]
-        );
-
-        res.json({message: 'Currency sold successfully.', newBalance: newBalance});
     } catch (error) {
         console.error('Error selling currency:', error);
         res.status(500).json({error: 'Error selling currency.'});
@@ -140,68 +156,75 @@ app.post('/buy', async (req, res) => {
             return res.status(400).json({error: 'Currency not supported.'});
         }
 
-        const cost = numericAmount * rate.mid; // Using mid rate for cost calculation
+        const cost = numericAmount * rate.mid;
 
-        const userResult = await pool.query(`SELECT balance FROM users WHERE id = $1`, [userId]);
-        if (userResult.rows.length === 0) {
-            return res.status(400).json({error: 'User not found.'});
+        // Begin transaction
+        await pool.query('BEGIN');
+
+        try {
+            const userResult = await pool.query(
+                `UPDATE users SET balance = balance - $1 WHERE id = $2 AND balance >= $1 RETURNING balance`,
+                [cost, userId]
+            );
+
+            if (userResult.rows.length === 0) {
+                throw new Error('Insufficient balance or user not found.');
+            }
+
+            await pool.query(
+                `INSERT INTO holdings (userId, currency, amount) 
+                 VALUES ($1, $2, $3) 
+                 ON CONFLICT(userId, currency) 
+                 DO UPDATE SET amount = holdings.amount + excluded.amount`,
+                [userId, currency, numericAmount]
+            );
+
+            await pool.query(
+                `INSERT INTO transactions (userId, currency, amount, type, timestamp, rate) 
+                 VALUES ($1, $2, $3, 'buy', $4, $5)`,
+                [userId, currency, numericAmount, new Date().toISOString(), rate.mid]
+            );
+
+            await pool.query('COMMIT');
+
+            res.json({
+                message: 'Currency purchased successfully.',
+                balance: parseFloat(userResult.rows[0].balance)
+            });
+        } catch (err) {
+            await pool.query('ROLLBACK');
+            throw err;
         }
-
-        const userBalance = parseFloat(userResult.rows[0].balance);
-        if (isNaN(userBalance) || userBalance < cost) {
-            return res.status(400).json({error: 'Insufficient balance.'});
-        }
-
-        const newBalance = userBalance - cost;
-        await pool.query(`UPDATE users SET balance = $1 WHERE id = $2`, [newBalance, userId]);
-        await pool.query(
-            `INSERT INTO holdings (userId, currency, amount) 
-             VALUES ($1, $2, $3) 
-             ON CONFLICT(userId, currency) 
-             DO UPDATE SET amount = holdings.amount + excluded.amount`,
-            [userId, currency, numericAmount]
-        );
-        await pool.query(
-            `INSERT INTO transactions (userId, currency, amount, type, timestamp) 
-             VALUES ($1, $2, $3, 'buy', $4)`,
-            [userId, currency, numericAmount, new Date().toISOString()]
-        );
-
-        res.json({message: 'Currency purchased successfully.', balance: newBalance});
     } catch (error) {
         console.error('Error buying currency:', error);
         res.status(500).json({error: 'Error purchasing currency.'});
     }
 });
 
-app.post('/fund', (req, res) => {
+app.post('/fund', async (req, res) => {
     const {userId, amount} = req.body;
-    const numericAmount = parseFloat(amount); // Ensure 'amount' is a number
-    if (isNaN(numericAmount)) {
+    const numericAmount = parseFloat(amount);
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
         return res.status(400).json({error: 'Invalid amount.'});
     }
 
-    pool.query(
-        `UPDATE users SET balance = balance + $1 WHERE id = $2`,
-        [numericAmount, userId],
-        (err) => {
-            if (err) return res.status(400).json({error: 'Error funding account.'});
+    try {
+        const result = await pool.query(
+            `UPDATE users SET balance = balance + $1 WHERE id = $2 RETURNING balance`,
+            [numericAmount, userId]
+        );
 
-            // After updating the balance, retrieve the updated balance
-            pool.query(
-                `SELECT balance FROM users WHERE id = $1`,
-                [userId],
-                (err, result) => {
-                    if (err || result.rows.length === 0) {
-                        return res.status(400).json({error: 'Error retrieving updated balance.'});
-                    }
-                    const updatedBalance = parseFloat(result.rows[0].balance);
-                    console.log(`Updated balance for user ${userId}: ${updatedBalance}`); // Log the updated balance
-                    res.json({message: 'Account funded successfully.', balance: updatedBalance});
-                }
-            );
+        if (result.rows.length === 0) {
+            return res.status(400).json({error: 'User not found.'});
         }
-    );
+
+        const updatedBalance = parseFloat(result.rows[0].balance);
+        res.json({message: 'Account funded successfully.', balance: updatedBalance});
+    } catch (error) {
+        console.error('Error funding account:', error);
+        res.status(500).json({error: 'Error funding account.'});
+    }
 });
 
 app.get('/rates', async (req, res) => {
@@ -209,29 +232,34 @@ app.get('/rates', async (req, res) => {
         const response = await axios.get('https://api.nbp.pl/api/exchangerates/tables/A?format=json');
         res.json(response.data[0].rates);
     } catch (error) {
+        console.error('Error fetching rates:', error);
         res.status(500).json({error: 'Failed to fetch exchange rates.'});
     }
 });
 
-app.get('/archived/:userId', (req, res) => {
+app.get('/archived/:userId', async (req, res) => {
     const {userId} = req.params;
 
-    pool.query(
-        `SELECT * FROM transactions WHERE userId = $1 ORDER BY timestamp DESC`,
-        [userId],
-        (err, result) => {
-            if (err) return res.status(400).json({error: 'Failed to fetch transactions.'});
-            res.json(result.rows);
-        }
-    );
+    try {
+        const result = await pool.query(
+            `SELECT * FROM transactions WHERE userId = $1 ORDER BY timestamp DESC`,
+            [userId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching transactions:', error);
+        res.status(400).json({error: 'Failed to fetch transactions.'});
+    }
 });
 
 app.get('/holdings/:userId', async (req, res) => {
     const {userId} = req.params;
 
     try {
-        const holdingsResult = await pool.query(`SELECT currency, amount FROM holdings WHERE userId = $1`, [userId]);
-        console.log(`Holdings for user ${userId}:`, holdingsResult.rows); // Log the holdings data
+        const holdingsResult = await pool.query(
+            `SELECT currency, amount FROM holdings WHERE userId = $1`,
+            [userId]
+        );
         res.json(holdingsResult.rows);
     } catch (error) {
         console.error('Error fetching holdings:', error);
@@ -239,8 +267,18 @@ app.get('/holdings/:userId', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT;
+// Error handling
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({error: 'Something went wrong!'});
+});
 
+// 404
+app.use((req, res) => {
+    res.status(404).json({error: 'Endpoint not found'});
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
