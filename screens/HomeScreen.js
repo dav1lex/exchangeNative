@@ -11,10 +11,12 @@ import {
     Platform,
     StatusBar,
     KeyboardAvoidingView,
-    Keyboard,
+    Dimensions,
 } from 'react-native';
 import {BalanceContext} from './BalanceContext';
 import {getExchangeRates, buyCurrency} from '../backend/api';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function HomeScreen({navigation}) {
     const {balance, userId, setBalance} = useContext(BalanceContext);
@@ -22,22 +24,19 @@ export default function HomeScreen({navigation}) {
     const [showModal, setShowModal] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     const [amountToBuy, setAmountToBuy] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const fetchRates = async () => {
-            try {
-                const response = await getExchangeRates();
-                setRates(response.data);
-            } catch (error) {
-                console.error("Error fetching exchange rates", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchRates();
     }, []);
+
+    const fetchRates = async () => {
+        try {
+            const response = await getExchangeRates();
+            setRates(response.data);
+        } catch (error) {
+            console.error("Error fetching rates:", error);
+        }
+    };
 
     const handleBuyCurrency = async () => {
         const amount = parseFloat(amountToBuy);
@@ -68,99 +67,95 @@ export default function HomeScreen({navigation}) {
         }
     };
 
-    const renderHeader = () => (
-        <View style={styles.headerSection}>
-            <Text style={styles.balance}>
-                Balance: {parseFloat(balance || 0).toFixed(2)} PLN
-            </Text>
-
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    style={[styles.button, styles.fundButton]}
-                    onPress={() => navigation.navigate('Fund Account')}
-                >
-                    <Text style={styles.buttonText}>Fund Account</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.button, styles.transactionButton]}
-                    onPress={() => navigation.navigate('Transaction')}
-                >
-                    <Text style={styles.buttonText}>Transaction</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.button, styles.archivedButton]}
-                    onPress={() => navigation.navigate('Archived Rates')}
-                >
-                    <Text style={styles.buttonText}>Archived Rates</Text>
-                </TouchableOpacity>
+    const renderCurrencyItem = ({ item }) => (
+        <TouchableOpacity
+            style={styles.currencyCard}
+            onPress={() => {
+                setSelectedCurrency(item.code);
+                setShowModal(true);
+            }}
+        >
+            <Text style={styles.currencyName}>{item.currency}</Text>
+            <View style={styles.currencyDetails}>
+                <Text style={styles.currencyCode}>{item.code}</Text>
+                <Text style={styles.rate}>{item.mid} PLN</Text>
             </View>
-            <Text style={styles.title}>Exchange Rates</Text>
-        </View>
+        </TouchableOpacity>
     );
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <StatusBar barStyle="dark-content" backgroundColor="#F7F9FC"/>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.balanceText}>
+                    Balance: {parseFloat(balance || 0).toFixed(2)} PLN
+                </Text>
+            </View>
 
-            <FlatList
-                ListHeaderComponent={renderHeader}
-                data={rates}
-                keyExtractor={(item) => item.code}
-                renderItem={({item}) => (
-                    <TouchableOpacity
-                        style={styles.rateItem}
-                        onPress={() => {
-                            setSelectedCurrency(item.code);
-                            setShowModal(true);
-                        }}
-                    >
-                        <Text style={styles.currencyText}>{item.currency} ({item.code})</Text>
-                        <Text style={styles.rateText}>{item.mid} PLN</Text>
-                    </TouchableOpacity>
-                )}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={true}
-            />
+            <View style={styles.actionsContainer}>
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: '#4F46E5' }]}
+                    onPress={() => navigation.navigate('Fund Account')}
+                >
+                    <Text style={styles.actionButtonText}>Fund Account</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: '#3B82F6' }]}
+                    onPress={() => navigation.navigate('Transaction')}
+                >
+                    <Text style={styles.actionButtonText}>Transaction</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: '#6366F1' }]}
+                    onPress={() => navigation.navigate('Archived Rates')}
+                >
+                    <Text style={styles.actionButtonText}>Archived Rates</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.ratesContainer}>
+                <Text style={styles.ratesTitle}>Exchange Rates</Text>
+                <FlatList
+                    data={rates}
+                    renderItem={renderCurrencyItem}
+                    keyExtractor={item => item.code}
+                    showsVerticalScrollIndicator={true}
+                    contentContainerStyle={styles.ratesList}
+                />
+            </View>
 
             <Modal
-                transparent={true}
                 visible={showModal}
+                transparent={true}
                 animationType="slide"
-                onRequestClose={() => {
-                    setShowModal(false);
-                    setAmountToBuy('');
-                }}
+                onRequestClose={() => setShowModal(false)}
             >
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={styles.modalOverlay}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.modalWrapper}
                 >
-                    <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Buy {selectedCurrency}</Text>
                         <TextInput
-                            style={styles.input}
+                            style={styles.modalInput}
                             keyboardType="numeric"
                             placeholder="Enter amount"
                             value={amountToBuy}
                             onChangeText={setAmountToBuy}
-                            autoFocus={true}
+                            placeholderTextColor="#A0AEC0"
+                            autoFocus
                         />
-                        <View style={styles.modalButtonContainer}>
+                        <View style={styles.modalButtons}>
                             <TouchableOpacity
-                                style={[styles.modalButton, styles.buyButton]}
-                                onPress={() => {
-                                    Keyboard.dismiss();
-                                    handleBuyCurrency();
-                                }}
+                                style={[styles.modalButton, { backgroundColor: '#4F46E5' }]}
+                                onPress={handleBuyCurrency}
                             >
                                 <Text style={styles.modalButtonText}>Buy</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.modalButton, styles.cancelButton]}
-                                onPress={() => {
-                                    setShowModal(false);
-                                    setAmountToBuy('');
-                                }}
+                                style={[styles.modalButton, { backgroundColor: '#EF4444' }]}
+                                onPress={() => setShowModal(false)}
                             >
                                 <Text style={styles.modalButtonText}>Cancel</Text>
                             </TouchableOpacity>
@@ -173,126 +168,124 @@ export default function HomeScreen({navigation}) {
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
+    container: {
         flex: 1,
         backgroundColor: '#F7F9FC',
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
-    listContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 16,
+    header: {
+        padding: 16,
+        backgroundColor: '#F7F9FC',
     },
-    headerSection: {
-        paddingTop: 16,
-        marginBottom: 16,
-    },
-    balance: {
-        fontSize: 32,
+    balanceText: {
+        fontSize: 28,
         fontWeight: '600',
-        marginBottom: 24,
         color: '#1A1F36',
         textAlign: 'center',
     },
-    buttonContainer: {
+    actionsContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 24,
+        padding: 16,
         gap: 8,
     },
-    button: {
+    actionButton: {
         flex: 1,
-        paddingVertical: 12,
-        paddingHorizontal: 8,
+        padding: 12,
         borderRadius: 12,
         elevation: 2,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 3,
     },
-    fundButton: {backgroundColor: '#4F46E5'},
-    transactionButton: {backgroundColor: '#3B82F6'},
-    archivedButton: {backgroundColor: '#6366F1'},
-    buttonText: {
-        color: '#fff',
+    actionButtonText: {
+        color: '#FFF',
         fontSize: 13,
         fontWeight: '600',
         textAlign: 'center',
     },
-    title: {
+    ratesContainer: {
+        flex: 1,
+        paddingHorizontal: 16,
+    },
+    ratesTitle: {
         fontSize: 24,
-        marginTop: 8,
         fontWeight: '600',
         color: '#1A1F36',
+        marginBottom: 16,
     },
-    rateItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+    ratesList: {
+        paddingBottom: 16,
+    },
+    currencyCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
         padding: 16,
         marginBottom: 8,
-        backgroundColor: '#fff',
-        borderRadius: 12,
         elevation: 1,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 1},
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
         shadowRadius: 2,
     },
-    currencyText: {
+    currencyName: {
         fontSize: 16,
-        fontWeight: '500',
         color: '#1A1F36',
+        marginBottom: 4,
     },
-    rateText: {
+    currencyDetails: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    currencyCode: {
+        fontSize: 14,
+        color: '#6B7280',
+    },
+    rate: {
         fontSize: 16,
-        fontWeight: '500',
+        fontWeight: '600',
         color: '#4F46E5',
     },
-    modalOverlay: {
+    modalWrapper: {
         flex: 1,
         justifyContent: 'flex-end',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
-    modalContainer: {
-        backgroundColor: 'white',
-        padding: 24,
+    modalContent: {
+        backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        marginTop: 'auto',
+        padding: 20,
+        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
     },
     modalTitle: {
         fontSize: 20,
         fontWeight: '600',
-        marginBottom: 16,
         color: '#1A1F36',
-    },
-    input: {
-        height: 48,
-        borderColor: '#E5E7EB',
-        borderWidth: 1,
-        borderRadius: 12,
         marginBottom: 16,
-        paddingHorizontal: 16,
-        backgroundColor: '#F9FAFB',
-        fontSize: 16,
     },
-    modalButtonContainer: {
+    modalInput: {
+        backgroundColor: '#F9FAFB',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
+        marginBottom: 16,
+    },
+    modalButtons: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         gap: 12,
-        marginBottom: Platform.OS === 'ios' ? 20 : 0,
     },
     modalButton: {
         flex: 1,
-        paddingVertical: 12,
+        padding: 16,
         borderRadius: 12,
         alignItems: 'center',
     },
-    buyButton: {backgroundColor: '#4F46E5'},
-    cancelButton: {backgroundColor: '#EF4444'},
     modalButtonText: {
-        color: '#fff',
+        color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '600',
     },
