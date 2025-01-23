@@ -46,14 +46,14 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
-    console.log('Register endpoint hit, body:', req.body); // Add this line
+    console.log('Register endpoint hit, body:', req.body);
     const {email, password} = req.body;
 
     if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required.' });
     }
 
-    console.log('Received registration request:', { email }); // Don't log password
+    console.log('Received registration request:', { email });
 
     if (!emailRegex.test(email)) {
         console.log('Invalid email format:', email);

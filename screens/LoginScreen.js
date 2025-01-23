@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
     View,
     Text,
@@ -9,43 +9,104 @@ import {
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
-    ActivityIndicator,
+    ActivityIndicator, Animated,
 } from 'react-native';
-import { loginUser } from '../backend/api';
-import { BalanceContext } from './BalanceContext';
+import {loginUser} from '../backend/api';
+import {BalanceContext} from './BalanceContext';
 
-export default function LoginScreen({ navigation }) {
+
+const StatusMessage = ({type, message, visible}) => {
+    const slideAnim = React.useRef(new Animated.Value(-100)).current;
+
+    React.useEffect(() => {
+        Animated.spring(slideAnim, {
+            toValue: visible ? 0 : -100,
+            useNativeDriver: true,
+        }).start();
+    }, [visible]);
+
+    if (!message) return null;
+
+    const backgroundColor = type === 'success' ? '#10B981' : '#EF4444';
+    return (
+        <Animated.View
+            style={[
+                styles.statusMessage,
+                {
+                    backgroundColor,
+                    transform: [{translateY: slideAnim}]
+                }
+            ]}
+        >
+            <Text style={styles.statusText}>{message}</Text>
+        </Animated.View>
+    );
+};
+
+
+export default function LoginScreen({navigation}) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { setBalance, setUserId } = React.useContext(BalanceContext);
+    const {setBalance, setUserId} = React.useContext(BalanceContext);
+    const [status, setStatus] = useState({
+        visible: false,
+        type: '',
+        message: ''
+    });
 
+    const showStatus = (type, message) => {
+        setStatus({
+            visible: true,
+            type,
+            message
+        });
+        setTimeout(() => {
+            setStatus(prev => ({...prev, visible: false}));
+        }, 3000);
+    };
     const handleLogin = async () => {
         if (!email || !password) {
             Alert.alert('Error', 'Please fill in all fields');
             return;
         }
 
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showStatus('error', 'Please enter a valid email address');
+            return;
+        }
+
         setIsLoading(true);
+
         try {
             const response = await loginUser(email, password);
-            const { userId, balance } = response.data;
+            const {userId, balance} = response.data;
+            showStatus('success', 'Login successful!');
 
             setUserId(userId);
             setBalance(balance);
-            navigation.navigate('Home');
+            setTimeout(() => {
+                setUserId(userId);
+                setBalance(balance);
+                navigation.navigate('Home');
+            }, 500);
         } catch (error) {
-            Alert.alert(
-                'Login Failed',
-                error.response?.data?.error || 'An error occurred while logging in.'
-            );
+            showStatus('error', 'Wrong credentials');
         } finally {
             setIsLoading(false);
         }
+
     };
+
 
     return (
         <SafeAreaView style={styles.safeArea}>
+            <StatusMessage
+                type={status.type}
+                message={status.message}
+                visible={status.visible}
+            />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
@@ -200,5 +261,28 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         marginLeft: 4,
+    },
+    statusMessage: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 50 : 30,
+        left: 20,
+        right: 20,
+        padding: 15,
+        borderRadius: 8,
+        zIndex: 1000,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    statusText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: '600',
+        textAlign: 'center',
     },
 });
