@@ -15,19 +15,6 @@ pool.on('connect', () => {
     console.log('Connected to the database.');
 });
 
-app.get('/test-db', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT NOW()');
-        res.json({
-            message: 'Database connected successfully',
-            timestamp: result.rows[0].now
-        });
-    } catch (error) {
-        console.error('Database test error:', error);
-        res.status(500).json({ error: 'Database connection failed' });
-    }
-});
-
 app.post('/login', (req, res) => {
     const {email, password} = req.body;
 
@@ -186,10 +173,7 @@ app.post('/buy', async (req, res) => {
         if (!rate) {
             return res.status(400).json({error: 'Currency not supported.'});
         }
-
         const cost = numericAmount * rate.mid;
-
-        // Begin transaction
         await pool.query('BEGIN');
 
         try {
