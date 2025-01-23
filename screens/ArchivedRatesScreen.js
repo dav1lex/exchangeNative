@@ -1,13 +1,12 @@
 import React, {useState, useEffect, useContext} from 'react';
 import {View, Text, StyleSheet, FlatList} from 'react-native';
 import {BalanceContext} from './BalanceContext';
-import {getArchivedRates} from '../backend/api'; // Import API
+import {getArchivedRates} from '../backend/api';
 
 export default function ArchivedRatesScreen() {
     const {userId} = useContext(BalanceContext);
     const [transactions, setTransactions] = useState([]);
 
-    // Fetch archived transactions
     useEffect(() => {
         const fetchTransactions = async () => {
             try {
