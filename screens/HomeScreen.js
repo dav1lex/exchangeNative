@@ -1,10 +1,20 @@
 import React, {useState, useEffect, useContext} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, TextInput, Button, SafeAreaView} from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    FlatList,
+    Modal,
+    TextInput,
+    SafeAreaView,
+    StatusBar
+} from 'react-native';
 import {BalanceContext} from './BalanceContext';
 import {getExchangeRates, buyCurrency} from '../backend/api';
 
 export default function HomeScreen({navigation}) {
-    const {balance, userId, setBalance} = useContext(BalanceContext); // Get userId from context
+    const {balance, userId, setBalance} = useContext(BalanceContext);
     const [rates, setRates] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedCurrency, setSelectedCurrency] = useState(null);
@@ -36,27 +46,42 @@ export default function HomeScreen({navigation}) {
             return;
         }
 
-        const cost = amount * rate.ask; // Assuming ask is the rate at which the bank sells the currency to the user
-
+        const cost = amount * rate.ask;
         if (balance < cost) {
             alert('Insufficient balance!');
             return;
         }
 
         try {
-            const response = await buyCurrency(userId, selectedCurrency, amount, cost); // Use dynamic userId
-            setBalance(response.data.balance); // Update balance from server response
+            const response = await buyCurrency(userId, selectedCurrency, amount, cost);
+            setBalance(response.data.balance);
             setShowModal(false);
         } catch (error) {
             console.error("Error buying currency:", error);
             alert('Error purchasing currency.');
         }
     };
+    const renderRateItem = ({item}) => (
+        <TouchableOpacity
+            style={styles.rateItem}
+            onPress={() => {
+                setSelectedCurrency(item.code);
+                setShowModal(true);
+            }}
+        >
+            <Text style={styles.currencyText}>{item.currency} ({item.code})</Text>
+            <Text style={styles.rateText}>{item.mid} PLN</Text>
+        </TouchableOpacity>
+    );
 
     return (
         <SafeAreaView style={styles.safeArea}>
+            <StatusBar barStyle="dark-content" backgroundColor="#F7F9FC"/>
+
             <View style={styles.headerSection}>
-                <Text style={styles.balance}>Balance: {parseFloat(balance || 0).toFixed(2)} PLN</Text>
+                <Text style={styles.balance}>
+                    Balance: {parseFloat(balance || 0).toFixed(2)} PLN
+                </Text>
 
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
@@ -85,23 +110,15 @@ export default function HomeScreen({navigation}) {
                 <FlatList
                     data={rates}
                     keyExtractor={(item) => item.code}
-                    renderItem={({item}) => (
-                        <TouchableOpacity
-                            style={styles.rateItem}
-                            onPress={() => {
-                                setSelectedCurrency(item.code);
-                                setShowModal(true);
-                            }}
-                        >
-                            <Text style={styles.currencyText}>{item.currency} {item.code}</Text>
-                            <Text style={styles.rateText}>{item.mid} PLN</Text>
-                        </TouchableOpacity>
-                    )}
-                    showsVerticalScrollIndicator={true}
+                    renderItem={renderRateItem}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.ratesList}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={10}
+                    windowSize={10}
                 />
             </View>
 
-            {/* Modal for buying currency */}
             <Modal
                 transparent={true}
                 visible={showModal}
@@ -117,10 +134,21 @@ export default function HomeScreen({navigation}) {
                             placeholder="Enter amount"
                             value={amountToBuy}
                             onChangeText={setAmountToBuy}
+                            autoFocus={true}
                         />
                         <View style={styles.modalButtonContainer}>
-                            <Button title="Buy" onPress={handleBuyCurrency}/>
-                            <Button title="Cancel" onPress={() => setShowModal(false)}/>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.buyButton]}
+                                onPress={handleBuyCurrency}
+                            >
+                                <Text style={styles.modalButtonText}>Buy</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.cancelButton]}
+                                onPress={() => setShowModal(false)}
+                            >
+                                <Text style={styles.modalButtonText}>Cancel</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -130,10 +158,16 @@ export default function HomeScreen({navigation}) {
 }
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
+        backgroundColor: '#F7F9FC',
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    },
+    headerSection: {
+        backgroundColor: '#F7F9FC',
         padding: 16,
-        backgroundColor: '#F7F9FC'
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
     },
     balance: {
         fontSize: 32,
@@ -145,50 +179,60 @@ const styles = StyleSheet.create({
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 24,
-        flexWrap: 'wrap',
-        gap: 10,
+        gap: 8,
     },
     button: {
         flex: 1,
-        minWidth: '30%',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 8,
         borderRadius: 12,
+        elevation: 2,
         shadowColor: '#000',
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 3,
-        elevation: 2,
     },
-    fundButton: {backgroundColor: '#4F46E5'},
-    transactionButton: {backgroundColor: '#3B82F6'},
-    archivedButton: {backgroundColor: '#6366F1'},
+    fundButton: {
+        backgroundColor: '#4F46E5',
+    },
+    transactionButton: {
+        backgroundColor: '#3B82F6',
+    },
+    archivedButton: {
+        backgroundColor: '#6366F1',
+    },
     buttonText: {
         color: '#fff',
-        fontSize: 15,
+        fontSize: 13,
         fontWeight: '600',
         textAlign: 'center',
+    },
+    ratesSection: {
+        flex: 1,
+        paddingHorizontal: 16,
     },
     title: {
         fontSize: 24,
         marginVertical: 16,
         fontWeight: '600',
         color: '#1A1F36',
-        textAlign: 'left',
+    },
+    ratesList: {
+        paddingBottom: 16,
     },
     rateItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'center',
         padding: 16,
-        marginVertical: 6,
+        marginBottom: 8,
         backgroundColor: '#fff',
         borderRadius: 12,
+        elevation: 1,
         shadowColor: '#000',
         shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.05,
         shadowRadius: 2,
-        elevation: 1,
     },
     currencyText: {
         fontSize: 16,
@@ -202,7 +246,7 @@ const styles = StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        justifyContent: 'flex-end', // Bottom sheet style
+        justifyContent: 'flex-end',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modalContainer: {
@@ -210,7 +254,6 @@ const styles = StyleSheet.create({
         padding: 24,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        width: '100%',
     },
     modalTitle: {
         fontSize: 20,
@@ -225,22 +268,29 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginBottom: 16,
         paddingHorizontal: 16,
-        width: '100%',
         backgroundColor: '#F9FAFB',
+        fontSize: 16,
     },
     modalButtonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         gap: 12,
-    }, ratesContainer: {
-        flex: 1,
-        marginBottom: 10
     },
-    headerSection: {padding: 16},
-    ratesSection: {
+    modalButton: {
         flex: 1,
-        padding: 16,
-        paddingTop: 0,
+        paddingVertical: 12,
+        borderRadius: 12,
+        alignItems: 'center',
     },
-
+    buyButton: {
+        backgroundColor: '#4F46E5',
+    },
+    cancelButton: {
+        backgroundColor: '#EF4444',
+    },
+    modalButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
 });
