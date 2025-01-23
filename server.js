@@ -15,6 +15,19 @@ pool.on('connect', () => {
     console.log('Connected to the database.');
 });
 
+app.get('/test-db', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT NOW()');
+        res.json({
+            message: 'Database connected successfully',
+            timestamp: result.rows[0].now
+        });
+    } catch (error) {
+        console.error('Database test error:', error);
+        res.status(500).json({ error: 'Database connection failed' });
+    }
+});
+
 app.post('/login', (req, res) => {
     const {email, password} = req.body;
 
@@ -33,7 +46,13 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
+    console.log('Register endpoint hit, body:', req.body); // Add this line
     const {email, password} = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
     console.log('Received registration request:', { email }); // Don't log password
 
     if (!emailRegex.test(email)) {
@@ -69,6 +88,7 @@ app.post('/register', (req, res) => {
         }
     );
 });
+
 app.post('/sell', async (req, res) => {
     const {userId, currency, amount} = req.body;
     const numericAmount = parseFloat(amount);

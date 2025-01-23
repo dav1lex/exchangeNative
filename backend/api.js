@@ -3,7 +3,22 @@ import axios from 'axios';
 const API_BASE_URL = 'https://exchangenative.onrender.com';
 
 export const registerUser = async (email, password) => {
-    return axios.post(`${API_BASE_URL}/register`, { email, password });
+    try {
+        console.log('Attempting to register:', { email });
+        const response = await axios.post(`${API_BASE_URL}/register`, {
+            email: email.trim().toLowerCase(),
+            password
+        });
+        console.log('Registration response:', response.data);
+        return response;
+    } catch (error) {
+        console.error('Registration error:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            error: error.message
+        });
+        throw error;
+    }
 };
 
 export const loginUser = async (email, password) => {
