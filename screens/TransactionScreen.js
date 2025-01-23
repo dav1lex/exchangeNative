@@ -68,6 +68,10 @@ export default function TransactionScreen() {
         }
     };
 
+    const handleHoldingPress = (currency) => {
+        setSelectedCurrency(currency);
+    };
+
     return (
         <View style={styles.container}>
             <Text style={styles.balance}>Balance: {parseFloat(balance || 0).toFixed(2)} PLN</Text>
@@ -77,11 +81,18 @@ export default function TransactionScreen() {
                 data={holdings}
                 keyExtractor={(item) => item.currency}
                 renderItem={({item}) => (
-                    <View style={styles.holdingItem}>
+                    <TouchableOpacity
+                        style={[
+                            styles.holdingItem,
+                            // Optional: add highlight when selected
+                            selectedCurrency === item.currency && styles.selectedHolding
+                        ]}
+                        onPress={() => handleHoldingPress(item.currency)}
+                    >
                         <Text style={styles.holdingText}>
                             {item.currency}: {parseFloat(item.amount).toFixed(2)}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
                 )}
                 style={{maxHeight: '40%'}}
                 contentContainerStyle={{paddingBottom: 10}}
@@ -163,5 +174,9 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '600',
+    },
+    selectedHolding: {
+        borderColor: '#4F46E5',
+        backgroundColor: '#F5F3FF',
     },
 });
