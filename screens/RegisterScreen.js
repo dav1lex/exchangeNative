@@ -1,43 +1,72 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
-    Alert,
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
     ActivityIndicator,
+    Animated
 } from 'react-native';
-import { registerUser } from '../backend/api';
+import {registerUser} from '../backend/api';
 
-export default function RegisterScreen({ navigation }) {
+const StatusMessage = ({type, message, visible}) => {
+    if (!visible) return null;
+
+    const backgroundColor = type === 'success' ? '#10B981' : '#EF4444';
+    return (
+        <Animated.View style={[styles.statusMessage, {backgroundColor}]}>
+            <Text style={styles.statusText}>{message}</Text>
+        </Animated.View>
+    );
+};
+
+export default function RegisterScreen({navigation}) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const [status, setStatus] = useState({
+        visible: false,
+        type: '',
+        message: ''
+    });
+
+    const showStatus = (type, message) => {
+        setStatus({
+            visible: true,
+            type,
+            message
+        });
+        // Hidemessage after 3 seconds
+        setTimeout(() => {
+            setStatus(prev => ({...prev, visible: false}));
+        }, 3000);
+    };
+
     const handleRegister = async () => {
         if (!email || !password || !confirmPassword) {
-            Alert.alert('Error', 'Please fill in all fields');
+            showStatus('error', 'Please fill in all fields');
             return;
         }
 
-        // email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            Alert.alert('Error', 'Please enter a valid email address');
+            showStatus('error', 'Please enter a valid email address');
             return;
         }
+
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
+            showStatus('error', 'Passwords do not match');
             return;
         }
 
         if (password.length < 8) {
-            Alert.alert('Error', 'Password must be at least 8 characters long');
+            showStatus('error', 'Password must be at least 8 characters long');
             return;
         }
 
@@ -45,22 +74,14 @@ export default function RegisterScreen({ navigation }) {
         try {
             const response = await registerUser(email, password);
             console.log('Registration response:', response);
-            Alert.alert(
-                'Success',
-                'Registration successful! Please sign in.',
-                [
-                    {
-                        text: 'OK',
-                        onPress: () => navigation.navigate('Login'),
-                    },
-                ]
-            );
+            showStatus('success', 'Registration successful! Redirecting to login...');
+
+            setTimeout(() => {
+                navigation.navigate('Login');
+            }, 2000);
         } catch (error) {
             console.error('Registration error:', error.response?.data || error);
-            Alert.alert(
-                'Registration Failed',
-                error.response?.data?.error || 'An error occurred while registering.'
-            );
+            showStatus('error', error.response?.data?.error || 'An error occurred while registering.');
         } finally {
             setIsLoading(false);
         }
@@ -68,6 +89,10 @@ export default function RegisterScreen({ navigation }) {
 
     return (
         <SafeAreaView style={styles.safeArea}>
+            <StatusMessage
+                type={status.type}
+                message={status.message}
+                visible={status.visible}/>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
@@ -129,7 +154,7 @@ export default function RegisterScreen({ navigation }) {
                             disabled={isLoading}
                         >
                             {isLoading ? (
-                                <ActivityIndicator color="#FFFFFF" />
+                                <ActivityIndicator color="#FFFFFF"/>
                             ) : (
                                 <Text style={styles.buttonText}>Create Account</Text>
                             )}
@@ -238,4 +263,27 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginLeft: 4,
     },
+    statusMessage: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 50 : 30,
+        left: 20,
+        right: 20,
+        padding: 15,
+        borderRadius: 8,
+        zIndex: 1000,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    statusText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: '600',
+        textAlign: 'center',
+    }
 });
