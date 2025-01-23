@@ -25,6 +25,12 @@ export default function RegisterScreen({ navigation }) {
             return;
         }
 
+        // email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            Alert.alert('Error', 'Please enter a valid email address');
+            return;
+        }
         if (password !== confirmPassword) {
             Alert.alert('Error', 'Passwords do not match');
             return;
@@ -37,7 +43,8 @@ export default function RegisterScreen({ navigation }) {
 
         setIsLoading(true);
         try {
-            await registerUser(email, password);
+            const response = await registerUser(email, password);
+            console.log('Registration response:', response);
             Alert.alert(
                 'Success',
                 'Registration successful! Please sign in.',
@@ -49,6 +56,7 @@ export default function RegisterScreen({ navigation }) {
                 ]
             );
         } catch (error) {
+            console.error('Registration error:', error.response?.data || error);
             Alert.alert(
                 'Registration Failed',
                 error.response?.data?.error || 'An error occurred while registering.'

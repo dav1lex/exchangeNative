@@ -34,30 +34,41 @@ app.post('/login', (req, res) => {
 
 app.post('/register', (req, res) => {
     const {email, password} = req.body;
+    console.log('Received registration request:', { email }); // Don't log password
 
     if (!emailRegex.test(email)) {
-        return res.status(400).json({error: 'Invalid email format.'});
+        console.log('Invalid email format:', email);
+        return res.status(400).json({ error: 'Invalid email format.' });
     }
 
     pool.query(
         `SELECT * FROM users WHERE email = $1`,
         [email],
         (err, result) => {
-            if (err) return res.status(500).json({error: 'Database error.'});
-            if (result.rows.length > 0) return res.status(400).json({error: 'User already exists.'});
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({error: 'Database error.'});
+            }
+            if (result.rows.length > 0) {
+                console.log('User already exists:', email);
+                return res.status(400).json({error: 'User already exists.'});
+            }
 
             pool.query(
                 `INSERT INTO users (email, password) VALUES ($1, $2)`,
                 [email, password],
                 (err, result) => {
-                    if (err) return res.status(500).json({error: 'Database error.'})
-                    res.json({message: 'Registration successful.'})
+                    if (err) {
+                        console.error('Insert error:', err);
+                        return res.status(500).json({error: 'Database error.'});
+                    }
+                    console.log('Registration successful:', email);
+                    res.json({message: 'Registration successful.'});
                 }
             );
         }
     );
 });
-
 app.post('/sell', async (req, res) => {
     const {userId, currency, amount} = req.body;
     const numericAmount = parseFloat(amount);
