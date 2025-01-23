@@ -14,7 +14,6 @@ export default function TransactionScreen() {
         try {
             const response = await getHoldings(userId);
             const holdingsData = response.data;
-            // Filter out currencies with a zero balance
             const filteredHoldings = holdingsData.filter(item => parseFloat(item.amount) > 0);
             setHoldings(filteredHoldings);
         } catch (error) {
@@ -84,7 +83,6 @@ export default function TransactionScreen() {
                     <TouchableOpacity
                         style={[
                             styles.holdingItem,
-                            // Optional: add highlight when selected
                             selectedCurrency === item.currency && styles.selectedHolding
                         ]}
                         onPress={() => handleHoldingPress(item.currency)}
