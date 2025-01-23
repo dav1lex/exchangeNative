@@ -15,13 +15,38 @@ export default function App() {
     return (
         <BalanceProvider>
             <NavigationContainer>
-                <Stack.Navigator initialRouteName="Login">
-                    <Stack.Screen name="Login" component={LoginScreen}/>
-                    <Stack.Screen name="Register" component={RegisterScreen}/>
-                    <Stack.Screen name="Home" component={HomeScreen}/>
-                    <Stack.Screen name="Fund Account" component={FundAccountScreen}/>
-                    <Stack.Screen name="Transaction" component={TransactionScreen}/>
-                    <Stack.Screen name="Archived Rates" component={ArchivedRatesScreen}/>
+                <Stack.Navigator
+                    initialRouteName="Login"
+                    screenOptions={{
+                        headerShown: false,
+                        cardStyle: {backgroundColor: '#F7F9FC'},
+                        presentation: 'card',
+                        animationEnabled: true,
+                    }}
+                >
+                    <Stack.Screen name="Login"
+                        component={LoginScreen}
+                    />
+                    <Stack.Screen
+                        name="Register"
+                        component={RegisterScreen}
+                    />
+                    <Stack.Screen
+                        name="Home"
+                        component={HomeScreen}
+                    />
+                    <Stack.Screen
+                        name="Fund Account"
+                        component={FundAccountScreen}
+                    />
+                    <Stack.Screen
+                        name="Transaction"
+                        component={TransactionScreen}
+                    />
+                    <Stack.Screen
+                        name="Archived Rates"
+                        component={ArchivedRatesScreen}
+                    />
                 </Stack.Navigator>
             </NavigationContainer>
         </BalanceProvider>

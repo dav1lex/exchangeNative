@@ -11,12 +11,9 @@ import {
     Platform,
     StatusBar,
     KeyboardAvoidingView,
-    Dimensions,
 } from 'react-native';
 import {BalanceContext} from './BalanceContext';
 import {getExchangeRates, buyCurrency} from '../backend/api';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function HomeScreen({navigation}) {
     const {balance, userId, setBalance} = useContext(BalanceContext);
@@ -84,46 +81,48 @@ export default function HomeScreen({navigation}) {
     );
 
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.balanceText}>
-                    Balance: {parseFloat(balance || 0).toFixed(2)} PLN
-                </Text>
-            </View>
+        <View style={styles.mainContainer}>
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.header}>
+                    <Text style={styles.balanceText}>
+                        Balance: {parseFloat(balance || 0).toFixed(2)} PLN
+                    </Text>
+                </View>
 
-            <View style={styles.actionsContainer}>
-                <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: '#4F46E5' }]}
-                    onPress={() => navigation.navigate('Fund Account')}
-                >
-                    <Text style={styles.actionButtonText}>Fund Account</Text>
-                </TouchableOpacity>
+                <View style={styles.actionsContainer}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: '#4F46E5' }]}
+                        onPress={() => navigation.navigate('Fund Account')}
+                    >
+                        <Text style={styles.actionButtonText}>Fund Account</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: '#3B82F6' }]}
-                    onPress={() => navigation.navigate('Transaction')}
-                >
-                    <Text style={styles.actionButtonText}>Transaction</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: '#3B82F6' }]}
+                        onPress={() => navigation.navigate('Transaction')}
+                    >
+                        <Text style={styles.actionButtonText}>Transaction</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: '#6366F1' }]}
-                    onPress={() => navigation.navigate('Archived Rates')}
-                >
-                    <Text style={styles.actionButtonText}>Archived Rates</Text>
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: '#6366F1' }]}
+                        onPress={() => navigation.navigate('Archived Rates')}
+                    >
+                        <Text style={styles.actionButtonText}>Archived Rates</Text>
+                    </TouchableOpacity>
+                </View>
 
-            <View style={styles.ratesContainer}>
-                <Text style={styles.ratesTitle}>Exchange Rates</Text>
-                <FlatList
-                    data={rates}
-                    renderItem={renderCurrencyItem}
-                    keyExtractor={item => item.code}
-                    showsVerticalScrollIndicator={true}
-                    contentContainerStyle={styles.ratesList}
-                />
-            </View>
+                <View style={styles.listContainer}>
+                    <Text style={styles.ratesTitle}>Exchange Rates</Text>
+                    <FlatList
+                        data={rates}
+                        renderItem={renderCurrencyItem}
+                        keyExtractor={item => item.code}
+                        showsVerticalScrollIndicator={true}
+                        contentContainerStyle={styles.ratesList}
+                    />
+                </View>
+            </SafeAreaView>
 
             <Modal
                 visible={showModal}
@@ -134,6 +133,7 @@ export default function HomeScreen({navigation}) {
                 <KeyboardAvoidingView
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     style={styles.modalWrapper}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
                 >
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>Buy {selectedCurrency}</Text>
@@ -163,14 +163,17 @@ export default function HomeScreen({navigation}) {
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    mainContainer: {
         flex: 1,
         backgroundColor: '#F7F9FC',
+    },
+    safeArea: {
+        flex: 1,
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     header: {
@@ -204,7 +207,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textAlign: 'center',
     },
-    ratesContainer: {
+    listContainer: {
         flex: 1,
         paddingHorizontal: 16,
     },
