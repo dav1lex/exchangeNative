@@ -18,7 +18,7 @@ and sell currencies using exchange rates from NBP.
 - Database: PostgreSQL
 - Hosting:
   - Backend: Render
-  - Database: Render
+  - Database: Render (expires on 5th February, because of being free tier. Will create db again)
   - Frontend: Netlify
 
 ## API Integration
@@ -32,7 +32,11 @@ The app uses the NBP API to fetch current exchange rates, does not store in db:
   - HomeScreen rates section does not scroll properly on overflow
 
 ## Live 
-[Click here](davilex.netlify.app)
+[Click here](https://davilex.netlify.app)
+Login: test@test.com
+pass: test
+Or can register. 
+
 
 ### Database:
 ```sql
